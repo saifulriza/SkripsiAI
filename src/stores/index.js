@@ -1,4 +1,3 @@
-import { defineStore } from '#q-app/wrappers'
 import { createPinia } from 'pinia'
 
 /*
@@ -10,11 +9,11 @@ import { createPinia } from 'pinia'
  * with the Store instance.
  */
 
-export default defineStore((/* { ssrContext } */) => {
+export default function (/* { ssrContext } */) {
   const pinia = createPinia()
 
   // You can add Pinia plugins here
   // pinia.use(SomePiniaPlugin)
 
   return pinia
-})
+}

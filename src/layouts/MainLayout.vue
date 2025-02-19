@@ -2,41 +2,54 @@
   <q-layout view="lHh Lpr lFf">
     <q-header elevated>
       <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
+        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
 
-        <q-toolbar-title>
-          Quasar App
-        </q-toolbar-title>
+        <q-toolbar-title> {{ $t('app.title') }} </q-toolbar-title>
 
-        <div>Quasar v{{ $q.version }}</div>
+        <LanguageSwitcher class="q-mr-md" />
+
+        <div v-if="authStore.isAuthenticated">
+          <q-btn flat round dense icon="person" class="q-mr-xs">
+            <q-menu>
+              <q-list style="min-width: 150px">
+                <q-item-label header>{{ authStore.user?.email }}</q-item-label>
+                <q-separator />
+                <q-item clickable @click="handleLogout">
+                  <q-item-section>{{ $t('auth.logout') }}</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+          </q-btn>
+        </div>
       </q-toolbar>
     </q-header>
 
-    <q-drawer
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-    >
+    <q-drawer v-model="leftDrawerOpen" show-if-above bordered v-if="authStore.isAuthenticated">
       <q-list>
-        <q-item-label
-          header
-        >
-          Essential Links
-        </q-item-label>
+        <q-item-label header> {{ $t('nav.title') }} </q-item-label>
 
-        <EssentialLink
-          v-for="link in linksList"
-          :key="link.title"
-          v-bind="link"
-        />
+        <!-- Student Menu Items -->
+        <template v-if="authStore.role === 'student'">
+          <q-item clickable v-ripple :to="{ name: 'student' }" exact>
+            <q-item-section avatar>
+              <q-icon name="school" />
+            </q-item-section>
+            <q-item-section> {{ $t('nav.myThesis') }} </q-item-section>
+          </q-item>
+        </template>
+
+        <!-- Lecturer Menu Items -->
+        <template v-if="authStore.role === 'lecturer'">
+          <q-item clickable v-ripple :to="{ name: 'lecturer' }" exact>
+            <q-item-section avatar>
+              <q-icon name="assignment" />
+            </q-item-section>
+            <q-item-section> {{ $t('nav.reviewTheses') }} </q-item-section>
+          </q-item>
+        </template>
       </q-list>
+
+      <AIProviderSelector class="q-px-md q-mt-md" />
     </q-drawer>
 
     <q-page-container>
@@ -47,56 +60,36 @@
 
 <script setup>
 import { ref } from 'vue'
-import EssentialLink from 'components/EssentialLink.vue'
+import { useAuthStore } from 'src/stores/auth/auth'
+import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
+import LanguageSwitcher from 'src/components/LanguageSwitcher.vue'
+import AIProviderSelector from 'components/AIProviderSelector.vue'
 
-const linksList = [
-  {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev'
-  },
-  {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework'
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev'
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev'
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev'
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev'
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev'
-  }
-]
-
+const { t } = useI18n()
+const authStore = useAuthStore()
+const router = useRouter()
+const $q = useQuasar()
 const leftDrawerOpen = ref(false)
 
-function toggleLeftDrawer () {
+function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value
+}
+
+async function handleLogout() {
+  try {
+    await authStore.logout()
+    router.push('/login')
+    $q.notify({
+      type: 'positive',
+      message: t('auth.logoutSuccess'),
+    })
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: t('auth.logoutError', { error: error.message }),
+    })
+  }
 }
 </script>
